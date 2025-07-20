@@ -50,7 +50,9 @@ const UploadForm: React.FC = () => {
           "Content-Type": "multipart/form-data",
         },
       });
-      navigate("/chat");
+
+      // ✅ Navigate with sessionId in the URL
+      navigate(`/chat?sessionId=${sessionId}`);
     } catch (err) {
       setError("Failed to upload file.");
     }
