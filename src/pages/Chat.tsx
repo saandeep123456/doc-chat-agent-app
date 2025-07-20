@@ -3,6 +3,7 @@ import ChatBox, { Message } from "../components/ChatBox";
 import ChatSidebar from "../components/ChatSidebar";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
+import { useLocation } from "react-router-dom";
 
 interface ChatSession {
   id: string;
@@ -14,7 +15,14 @@ interface ChatSession {
 const LOCAL_KEY = "chatHistory";
 const SESSION_ID_KEY = "sessionId";
 
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
 const Chat: React.FC = () => {
+  const query = useQuery();
+  const urlSessionId = query.get("sessionId"); // 🔧 grab sessionId from URL
+
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -22,58 +30,65 @@ const Chat: React.FC = () => {
 
   const currentSession = sessions.find((s) => s.id === currentSessionId);
 
-  // Step 1: Load sessionId and fetch backend history if local is empty
+  // 🔧 Step 1: Decide and persist session ID
   useEffect(() => {
-    let storedSessionId = sessionStorage.getItem(SESSION_ID_KEY);
-    if (!storedSessionId) {
-      storedSessionId = uuidv4();
-      sessionStorage.setItem(SESSION_ID_KEY, storedSessionId);
+    let activeSessionId = urlSessionId || sessionStorage.getItem(SESSION_ID_KEY);
+
+    if (!activeSessionId) {
+      activeSessionId = uuidv4();
     }
-    setSessionId(storedSessionId);
-    console.log("Using session ID:", storedSessionId);
+
+    setSessionId(activeSessionId);
+    sessionStorage.setItem(SESSION_ID_KEY, activeSessionId);
+    console.log("Using session ID:", activeSessionId);
+  }, [urlSessionId]);
+
+  // 🔧 Step 2: Load sessions from localStorage (if any), then fallback to backend
+  useEffect(() => {
+    if (!sessionId) return;
 
     const localSessions = localStorage.getItem(LOCAL_KEY);
-    if (!localSessions || JSON.parse(localSessions).length === 0) {
+    const parsedSessions = localSessions ? JSON.parse(localSessions) : [];
+
+    // Load from local if matching sessionId is found
+    const existing = parsedSessions.find((s: ChatSession) =>
+      s.messages.some((m: Message) => m.content.includes(sessionId))
+    );
+
+    if (existing) {
+      setSessions(parsedSessions);
+      setCurrentSessionId(existing.id);
+    } else {
+      // 🔧 Otherwise, fetch from backend
       axios
-        .get(`http://18.116.201.186:8000/history/${storedSessionId}`)
+        .get(`http://18.116.201.186:8000/history/${sessionId}`)
         .then((res) => {
           const rawMessages = res.data.messages || [];
+
           if (rawMessages.length > 0) {
             const messages: Message[] = rawMessages.map((msg: any) => ({
               role: msg.role === "bot" ? "agent" : "user",
               content: msg.text || msg.content,
             }));
 
-            const sessionFromBackend: ChatSession = {
+            const newSession: ChatSession = {
               id: uuidv4(),
               title: messages[0]?.content?.slice(0, 30) || "Imported Chat",
               messages,
               createdAt: new Date().toISOString(),
             };
 
-            setSessions([sessionFromBackend]);
-            setCurrentSessionId(sessionFromBackend.id);
+            setSessions([newSession]);
+            setCurrentSessionId(newSession.id);
           }
         })
         .catch((err) => {
           console.error("Failed to fetch history:", err);
         });
     }
-  }, []);
+  }, [sessionId]);
 
-  // Step 2: Load sessions from localStorage (prioritized if present)
-  useEffect(() => {
-    const saved = localStorage.getItem(LOCAL_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.length > 0) {
-        setSessions(parsed);
-        setCurrentSessionId(parsed[0].id);
-      }
-    }
-  }, []);
-
-  // Step 3: Persist sessions to localStorage
+  // Persist sessions
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(sessions));
   }, [sessions]);
