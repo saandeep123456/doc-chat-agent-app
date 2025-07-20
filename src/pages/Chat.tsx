@@ -35,7 +35,7 @@ const Chat: React.FC = () => {
     const localSessions = localStorage.getItem(LOCAL_KEY);
     if (!localSessions || JSON.parse(localSessions).length === 0) {
       axios
-        .get(`http://172.31.47.192:8000/history/${storedSessionId}`)
+        .get(`http://localhost:8000/history/${storedSessionId}`)
         .then((res) => {
           const rawMessages = res.data.messages || [];
           if (rawMessages.length > 0) {
@@ -111,7 +111,7 @@ const Chat: React.FC = () => {
     formData.append("user_id", sessionId);
 
     try {
-      const res = await axios.post("http://172.31.47.192:8000/ask", formData, {
+      const res = await axios.post("http://localhost:8000/ask", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
