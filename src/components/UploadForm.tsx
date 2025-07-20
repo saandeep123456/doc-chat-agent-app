@@ -45,7 +45,7 @@ const UploadForm: React.FC = () => {
     formData.append("user_id", sessionId);
 
     try {
-      await axios.post("http://doc-chat-agent-backend:8000/upload", formData, {
+      await axios.post("http://18.116.201.186:8000/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
