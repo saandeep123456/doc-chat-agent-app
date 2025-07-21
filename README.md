@@ -14,8 +14,8 @@ This is the **frontend** of the Document Chatbot application. Users can upload d
 - Connects with FastAPI backend
 
 # Clone the Repository
-git clone https://github.com/saandeep123456/doc-chat-agent-app.git
-cd doc-chat-agent-app
+-git clone https://github.com/saandeep123456/doc-chat-agent-app.git
+-cd doc-chat-agent-app
 
 # Install Dependencies
 npm install
