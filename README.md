@@ -23,5 +23,5 @@ or, if you're using Yarn:
 yarn install
 
 # Run the Development Server
-npm run dev
-Frontend should now be running at: http://localhost:5173
+- npm run start
+- Frontend should now be running at: http://localhost:5173
